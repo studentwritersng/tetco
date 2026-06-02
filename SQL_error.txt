@@ -1,0 +1,143 @@
+I found the exact problem.
+
+Your profiles table is created before the schools table:
+
+CREATE TABLE profiles (
+  ...
+  active_school_id UUID REFERENCES schools(id) ON DELETE SET NULL,
+  ...
+);
+
+CREATE TABLE schools (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  ...
+);
+
+At the moment PostgreSQL is creating profiles, the schools table doesn't exist yet, so it throws:
+
+ERROR: 42P01: relation "schools" does not exist
+Quick Fix
+
+Move the entire schools table block above the profiles table:
+
+CREATE TABLE schools (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  teacher_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
+  name TEXT NOT NULL,
+  address TEXT,
+  logo_url TEXT,
+  is_active BOOLEAN DEFAULT TRUE,
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  updated_at TIMESTAMPTZ DEFAULT NOW(),
+  deleted_at TIMESTAMPTZ
+);
+
+CREATE TABLE profiles (
+  id UUID PRIMARY KEY REFERENCES auth.users(id) ON DELETE CASCADE,
+  ...
+  active_school_id UUID REFERENCES schools(id) ON DELETE SET NULL,
+  ...
+);
+But There Is Another Problem
+
+Even if you move schools above profiles, you'll create a circular dependency:
+
+schools.teacher_id → references auth.users
+profiles.active_school_id → references schools
+profiles.referred_by → references profiles
+
+The cleanest approach is:
+
+Step 1
+
+Create profiles without:
+
+active_school_id UUID REFERENCES schools(id)
+
+Use:
+
+active_school_id UUID,
+Step 2
+
+Create schools.
+
+Step 3
+
+After both tables exist:
+
+ALTER TABLE profiles
+ADD CONSTRAINT profiles_active_school_id_fkey
+FOREIGN KEY (active_school_id)
+REFERENCES schools(id)
+ON DELETE SET NULL;
+I Also Found Another Error
+
+You have triggers on tables that don't have an updated_at column:
+
+CREATE TRIGGER set_updated_at_school_classes
+  BEFORE UPDATE ON school_classes
+
+But school_classes does not contain:
+
+updated_at TIMESTAMPTZ
+
+Same issue with:
+
+questions
+referral_credits
+
+Your set_updated_at() trigger will fail when an update occurs because it tries to do:
+
+NEW.updated_at = NOW();
+
+on tables that don't have that column.
+
+Either:
+
+Add the column
+updated_at TIMESTAMPTZ DEFAULT NOW()
+
+to those tables
+
+or
+
+Remove those triggers
+DROP TRIGGER set_updated_at_school_classes;
+DROP TRIGGER set_updated_at_questions;
+DROP TRIGGER set_updated_at_referral_credits;
+Another Critical Error
+
+At the end you create:
+
+CREATE VIEW referral_history AS
+SELECT
+  ...
+  SUBSTRING(p_referee.email, 1, 3) || '***'
+
+But your profiles table has no email column.
+
+So you'll get:
+
+column p_referee.email does not exist
+
+You either need:
+
+email TEXT
+
+in profiles
+
+or fetch email from:
+
+auth.users
+
+instead.
+
+Summary
+
+You'll likely hit these errors in order:
+
+❌ relation "schools" does not exist
+❌ Trigger updates updated_at on tables without that column.
+❌ p_referee.email does not exist in referral_history.
+
+Fix those three areas before running the migration again.

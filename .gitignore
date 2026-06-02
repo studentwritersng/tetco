@@ -1,0 +1,33 @@
+# Secrets
+supabase_secrets.txt
+
+# Android / Gradle
+.gradle/
+build/
+app/build/
+local.properties
+*.iml
+.idea/
+*.apk
+*.aab
+*.keystore
+
+# Firebase
+google-services.json
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Python test scripts
+test_*.py
+*.pyc
+__pycache__/
+
+# JDK (local build tool, ~300MB - don't push)
+jdk17/
+jdk17.zip
+
+# Misc
+*.log
+.env
