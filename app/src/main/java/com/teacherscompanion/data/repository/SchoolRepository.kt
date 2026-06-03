@@ -20,6 +20,7 @@ import com.teacherscompanion.data.remote.dto.SchoolDto
 import com.teacherscompanion.data.remote.dto.SubjectDto
 import com.teacherscompanion.data.remote.dto.SubjectWithCoverageDto
 import io.github.jan.supabase.SupabaseClient
+import io.github.jan.supabase.gotrue.auth
 import io.github.jan.supabase.postgrest.from
 import kotlinx.serialization.json.Json
 import java.util.UUID
@@ -48,8 +49,8 @@ class SchoolRepository @Inject constructor(
 
     suspend fun refreshClassesForSchool(schoolId: String) {
         val classes = supabaseClient.from("school_classes")
-            .select() {
-                eq("school_id", schoolId)
+            .select {
+                filter { eq("school_id", schoolId) }
             }
             .decodeList<SchoolClassDto>()
         schoolClassDao.upsertAll(classes.map { it.toEntity() })
@@ -57,8 +58,8 @@ class SchoolRepository @Inject constructor(
 
     suspend fun refreshSubjectsForClass(classId: String) {
         val subjects = supabaseClient.from("subjects")
-            .select() {
-                eq("school_class_id", classId)
+            .select {
+                filter { eq("school_class_id", classId) }
             }
             .decodeList<SubjectDto>()
         subjectDao.upsertAll(subjects.map { it.toEntity() })
@@ -99,7 +100,7 @@ class SchoolRepository @Inject constructor(
         )
         schoolDao.upsert(entity)
         val dto = entity.toDto()
-        syncManager.queueSync("school", schoolId, "insert", json.encodeToString(dto))
+        syncManager.queueSync("school", schoolId, "insert", json.encodeToString(SchoolDto.serializer(), dto))
         return dto
     }
 
@@ -114,7 +115,7 @@ class SchoolRepository @Inject constructor(
         )
         schoolDao.upsert(updated)
         val dto = updated.toDto()
-        syncManager.queueSync("school", schoolId, "update", json.encodeToString(dto))
+        syncManager.queueSync("school", schoolId, "update", json.encodeToString(SchoolDto.serializer(), dto))
     }
 
     suspend fun deleteSchool(schoolId: String) {
@@ -128,7 +129,7 @@ class SchoolRepository @Inject constructor(
         profileDao.setActiveSchool(teacherId, schoolId)
         val profile = profileDao.getById(teacherId) ?: return
         val dto = profile.toDto()
-        syncManager.queueSync("profile", teacherId, "update", json.encodeToString(dto))
+        syncManager.queueSync("profile", teacherId, "update", json.encodeToString(ProfileDto.serializer(), dto))
     }
 
     suspend fun getClassesForSchool(schoolId: String): List<SchoolClassWithLevelDto> {
@@ -162,7 +163,7 @@ class SchoolRepository @Inject constructor(
         )
         schoolClassDao.upsert(entity)
         val dto = entity.toDto()
-        syncManager.queueSync("school_class", classId, "insert", json.encodeToString(dto))
+        syncManager.queueSync("school_class", classId, "insert", json.encodeToString(SchoolClassDto.serializer(), dto))
         return dto
     }
 
@@ -202,7 +203,7 @@ class SchoolRepository @Inject constructor(
         )
         subjectDao.upsert(entity)
         val dto = entity.toDto()
-        syncManager.queueSync("subject", subjectId, "insert", json.encodeToString(dto))
+        syncManager.queueSync("subject", subjectId, "insert", json.encodeToString(SubjectDto.serializer(), dto))
         return dto
     }
 
@@ -210,7 +211,7 @@ class SchoolRepository @Inject constructor(
         subjectDao.updateName(subjectId, name)
         val entity = subjectDao.getById(subjectId) ?: return
         val dto = entity.toDto()
-        syncManager.queueSync("subject", subjectId, "update", json.encodeToString(dto))
+        syncManager.queueSync("subject", subjectId, "update", json.encodeToString(SubjectDto.serializer(), dto))
     }
 
     suspend fun deleteSubject(subjectId: String) {

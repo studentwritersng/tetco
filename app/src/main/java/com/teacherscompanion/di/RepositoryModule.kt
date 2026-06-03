@@ -50,8 +50,8 @@ object RepositoryModule {
         return SyllabusRepository(
             supabaseClient, syncManager,
             syllabusTopicDao, lessonNoteDao, questionDao,
-            subjectDao, schoolClassDao, classLevelDao,
-            questionHistoryDao
+            questionHistoryDao, subjectDao, schoolClassDao,
+            classLevelDao
         )
     }
 

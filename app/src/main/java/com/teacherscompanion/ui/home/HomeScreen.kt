@@ -1,5 +1,6 @@
 package com.teacherscompanion.ui.home
 
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.horizontalScroll
@@ -323,7 +324,7 @@ fun HomeScreen(
                     // Circular Progress gauge exactly like template (0%)
                     Box(contentAlignment = Alignment.Center, modifier = Modifier.size(60.dp)) {
                         CircularProgressIndicator(
-                            progress = { uiState.syllabusPercent / 100f },
+                            progress = uiState.syllabusPercent / 100f,
                             modifier = Modifier.fillMaxSize(),
                             color = primaryColor,
                             strokeWidth = 6.dp,
@@ -349,7 +350,7 @@ fun HomeScreen(
                 modifier = Modifier.fillMaxWidth(),
                 colors = CardDefaults.cardColors(containerColor = successBoxColor),
                 shape = RoundedCornerShape(16.dp),
-                border = CardBorder(BorderStroke(1.dp, successBorderColor))
+                border = BorderStroke(1.dp, successBorderColor)
             ) {
                 Row(
                     modifier = Modifier.padding(16.dp).fillMaxWidth(),
@@ -472,5 +473,4 @@ fun HubGeneratorCard(
     }
 }
 
-// Simple CardBorder helper
-private fun CardBorder(border: BorderStroke): BorderStroke = border
+

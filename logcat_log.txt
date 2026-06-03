@@ -1,0 +1,15 @@
+App crashes due to Compose version mismatch.
+
+Logcat shows:
+
+java.lang.NoSuchMethodError
+
+in
+
+androidx.compose.material3.ProgressIndicatorKt.CircularProgressIndicator
+
+originating from:
+
+com.teacherscompanion.ui.auth.LoginScreen.kt:137
+
+Please inspect all Compose dependencies and align Material3, Compose UI, Compose Animation, Activity Compose, and BOM versions. Generate corrected Gradle files.

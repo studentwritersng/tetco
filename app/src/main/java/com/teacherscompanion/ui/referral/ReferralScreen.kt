@@ -83,7 +83,7 @@ fun ReferralScreen(
                 }
             }
 
-            HorizontalDivider()
+            Divider()
             Text("Your Discounts", style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Bold)
 
             Card(modifier = Modifier.fillMaxWidth(), colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.primaryContainer)) {
@@ -137,7 +137,7 @@ fun ReferralScreen(
                 }
             }
 
-            HorizontalDivider()
+            Divider()
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceEvenly
@@ -157,7 +157,7 @@ fun ReferralScreen(
             }
 
             if (uiState.history.isNotEmpty()) {
-                HorizontalDivider()
+                Divider()
                 Text("Referral History", style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Bold)
                 uiState.history.forEach { item ->
                     ListItem(

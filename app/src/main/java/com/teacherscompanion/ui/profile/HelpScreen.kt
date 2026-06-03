@@ -55,7 +55,7 @@ fun HelpScreen(
                 columns = GridCells.Fixed(2),
                 horizontalArrangement = Arrangement.spacedBy(12.dp),
                 verticalArrangement = Arrangement.spacedBy(12.dp),
-                modifier = Modifier.height((categories.size / 2 + categories.size % 2) * 80.dp)
+                modifier = Modifier.height(80.dp * (categories.size / 2 + categories.size % 2))
             ) {
                 items(categories) { (name, id) ->
                     OutlinedCard(onClick = { onNavigateToCategory(id) }, modifier = Modifier.fillMaxWidth()) {
@@ -73,7 +73,7 @@ fun HelpScreen(
                     headlineContent = { Text(item.question, style = MaterialTheme.typography.bodyMedium) },
                     modifier = Modifier.fillMaxWidth().clickable { }
                 )
-                HorizontalDivider()
+                Divider()
             }
         }
     }

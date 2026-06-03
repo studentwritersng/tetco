@@ -99,7 +99,7 @@ fun TopicDetailScreen(
                     }
                 }
 
-                HorizontalDivider()
+                Divider()
 
                 Text("LESSON NOTE", style = MaterialTheme.typography.labelLarge, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary)
 
@@ -202,7 +202,7 @@ fun TopicDetailScreen(
                 }
 
                 if (uiState.teachingGuide != null) {
-                    HorizontalDivider()
+                    Divider()
                     Text("TEACHING GUIDE", style = MaterialTheme.typography.labelLarge, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary)
                     Card(modifier = Modifier.fillMaxWidth()) {
                         Text(text = uiState.teachingGuide!!, style = MaterialTheme.typography.bodyMedium, modifier = Modifier.padding(16.dp))
@@ -210,7 +210,7 @@ fun TopicDetailScreen(
                 }
 
                 if (uiState.questions.isNotEmpty()) {
-                    HorizontalDivider()
+                    Divider()
                     Text("QUESTIONS", style = MaterialTheme.typography.labelLarge, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary)
                     TabRow(selectedTabIndex = selectedQuestionTab) {
                         Tab(selected = selectedQuestionTab == 0, onClick = { selectedQuestionTab = 0 }, text = { Text("MCQ") })

@@ -59,7 +59,7 @@ fun AddClassSheet(
                         trailingContent = if (alreadyAdded) { { Text("Added", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant) } } else null
                     )
                     if (!alreadyAdded) {
-                        HorizontalDivider()
+                        Divider()
                     }
                 }
             }

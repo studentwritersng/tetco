@@ -64,24 +64,21 @@ class SyncManager @Inject constructor(
 
     private suspend fun processItem(item: PendingSyncEntity) {
         val table = entityTypeToTable(item.entityType) ?: return
-        val payloadData = item.payload?.let { json.parseToJsonElement(it) }
+        val payloadString = item.payload ?: return
 
         when (item.action) {
             "insert" -> {
-                if (payloadData != null) {
-                    supabaseClient.from(table).insert(payloadData)
-                }
+                supabaseClient.from(table).insert(payloadString)
             }
             "update" -> {
-                if (payloadData != null) {
-                    supabaseClient.from(table).update(payloadData) {
-                        eq("id", item.entityId)
-                    }
+                supabaseClient.from(table).update(payloadString) {
+                    filter { eq("id", item.entityId) }
                 }
             }
             "delete" -> {
-                supabaseClient.from(table).update(mapOf("deleted_at" to java.time.Instant.now().toString())) {
-                    eq("id", item.entityId)
+                val now = java.time.Instant.now().toString()
+                supabaseClient.from(table).update("{\"deleted_at\":\"$now\"}") {
+                    filter { eq("id", item.entityId) }
                 }
             }
         }

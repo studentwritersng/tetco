@@ -15,6 +15,7 @@ import com.teacherscompanion.MainActivity
 import com.teacherscompanion.R
 import dagger.hilt.android.AndroidEntryPoint
 import io.github.jan.supabase.SupabaseClient
+import io.github.jan.supabase.gotrue.auth
 import io.github.jan.supabase.postgrest.from
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -65,8 +66,8 @@ class TCFirebaseMessagingService : FirebaseMessagingService() {
         CoroutineScope(SupervisorJob() + Dispatchers.IO).launch {
             try {
                 val userId = supabaseClient.auth.currentSessionOrNull()?.user?.id ?: return@launch
-                supabaseClient.from("profiles").update(mapOf("fcm_token" to token)) {
-                    eq("id", userId)
+                supabaseClient.from("profiles").update("{\"fcm_token\":\"$token\"}") {
+                    filter { eq("id", userId) }
                 }
             } catch (_: Exception) { }
         }

@@ -3,6 +3,7 @@ package com.teacherscompanion.ui.auth
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.teacherscompanion.core.AuthManager
+import com.teacherscompanion.core.SuspendedAccountException
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -55,6 +56,8 @@ class AuthViewModel @Inject constructor(
             _uiState.value = _uiState.value.copy(isLoading = true, error = null)
             try {
                 authManager.signInWithEmail(state.email, state.password)
+            } catch (e: SuspendedAccountException) {
+                _uiState.value = _uiState.value.copy(isLoading = false, error = e.message)
             } catch (e: Exception) {
                 _uiState.value = _uiState.value.copy(isLoading = false, error = e.message ?: "Login failed")
             }

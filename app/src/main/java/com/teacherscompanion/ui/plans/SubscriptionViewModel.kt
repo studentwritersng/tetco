@@ -5,10 +5,13 @@ import androidx.lifecycle.viewModelScope
 import com.teacherscompanion.data.repository.ProfileRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import io.github.jan.supabase.SupabaseClient
-import io.github.jan.supabase.functions.invoke
+import io.github.jan.supabase.functions.functions
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
+import kotlinx.serialization.json.buildJsonObject
+import kotlinx.serialization.json.put
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
 import javax.inject.Inject
@@ -79,9 +82,11 @@ class SubscriptionViewModel @Inject constructor(
             try {
                 val subscription = profileRepository.getSubscription()
                 if (subscription != null) {
-                    supabaseClient.functions.invoke("cancel-subscription") {
-                        setBody(mapOf("action" to "cancel", "subscription_id" to subscription.id))
+                    val cancelBody = buildJsonObject {
+                        put("action", "cancel")
+                        put("subscription_id", subscription.id)
                     }
+                    supabaseClient.functions.invoke("cancel-subscription", body = cancelBody)
                 }
                 loadData()
             } catch (_: Exception) { }

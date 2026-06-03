@@ -5,10 +5,13 @@ import androidx.lifecycle.viewModelScope
 import com.teacherscompanion.core.AuthManager
 import dagger.hilt.android.lifecycle.HiltViewModel
 import io.github.jan.supabase.SupabaseClient
-import io.github.jan.supabase.functions.invoke
+import io.github.jan.supabase.functions.functions
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
+import kotlinx.serialization.json.buildJsonObject
+import kotlinx.serialization.json.put
 import javax.inject.Inject
 
 data class DeleteAccountUiState(
@@ -32,9 +35,8 @@ class DeleteAccountViewModel @Inject constructor(
         viewModelScope.launch {
             _uiState.value = _uiState.value.copy(isDeleting = true, error = null)
             try {
-                supabaseClient.functions.invoke("delete-account") {
-                    setBody(mapOf("password" to password))
-                }
+                val deleteBody = buildJsonObject { put("password", password) }
+                supabaseClient.functions.invoke("delete-account", body = deleteBody)
                 authManager.signOut()
                 _uiState.value = DeleteAccountUiState(isDeleted = true)
                 onSuccess()

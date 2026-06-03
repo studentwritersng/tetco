@@ -59,7 +59,7 @@ fun GapListScreen(
                             }
                             Spacer(modifier = Modifier.height(8.dp))
                             LinearProgressIndicator(
-                                progress = { uiState.completionPercent / 100f },
+                                progress = uiState.completionPercent / 100f,
                                 modifier = Modifier.fillMaxWidth().height(8.dp),
                                 color = MaterialTheme.colorScheme.primary,
                                 trackColor = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.2f)
@@ -100,6 +100,7 @@ fun GapListScreen(
     }
 }
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun GapTopicCard(
     topic: SyllabusTopicDto,

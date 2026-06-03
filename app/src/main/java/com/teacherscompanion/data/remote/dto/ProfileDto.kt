@@ -25,5 +25,7 @@ data class ProfileDto(
     val referral_reward_issued: Boolean = false,
     val created_at: String? = null,
     val updated_at: String? = null,
-    val deleted_at: String? = null
+    val deleted_at: String? = null,
+    val suspended_at: String? = null,
+    val suspended_reason: String? = null
 )

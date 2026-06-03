@@ -96,6 +96,7 @@ fun SchoolListScreen(
     }
 }
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun SchoolCard(
     school: com.teacherscompanion.data.remote.dto.SchoolDto,

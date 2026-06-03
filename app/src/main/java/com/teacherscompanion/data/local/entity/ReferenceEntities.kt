@@ -52,6 +52,8 @@ data class ProfileEntity(
     val created_at: String? = null,
     val updated_at: String? = null,
     val deleted_at: String? = null,
+    val suspended_at: String? = null,
+    val suspended_reason: String? = null,
     val cached_at: Long = System.currentTimeMillis()
 )
 

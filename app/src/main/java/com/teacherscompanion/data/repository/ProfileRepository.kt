@@ -9,6 +9,7 @@ import com.teacherscompanion.data.local.entity.ProfileEntity
 import com.teacherscompanion.data.local.entity.ReferralHistoryEntity
 import com.teacherscompanion.data.remote.dto.*
 import io.github.jan.supabase.SupabaseClient
+import io.github.jan.supabase.gotrue.auth
 import io.github.jan.supabase.postgrest.from
 import io.github.jan.supabase.storage.storage
 import kotlinx.serialization.json.Json
@@ -63,12 +64,10 @@ class ProfileRepository @Inject constructor(
             cached_at = System.currentTimeMillis()
         )
         profileDao.upsert(updated)
-        val payload = json.encodeToString(
-            buildJsonObject {
-                put("full_name", fullName)
-                put("phone", phone)
-            }
-        )
+        val payload = buildJsonObject {
+            put("full_name", fullName)
+            put("phone", phone)
+        }.toString()
         syncManager.queueSync(
             entityType = "profile",
             entityId = userId,
@@ -92,11 +91,9 @@ class ProfileRepository @Inject constructor(
             cached_at = System.currentTimeMillis()
         )
         profileDao.upsert(updated)
-        val payload = json.encodeToString(
-            buildJsonObject {
-                put("avatar_url", url)
-            }
-        )
+        val payload = buildJsonObject {
+            put("avatar_url", url)
+        }.toString()
         syncManager.queueSync(
             entityType = "profile",
             entityId = userId,
@@ -187,7 +184,9 @@ class ProfileRepository @Inject constructor(
         referral_reward_issued = referral_reward_issued,
         created_at = created_at,
         updated_at = updated_at,
-        deleted_at = deleted_at
+        deleted_at = deleted_at,
+        suspended_at = suspended_at,
+        suspended_reason = suspended_reason
     )
 
     private fun ProfileDto.toEntity() = ProfileEntity(
@@ -212,7 +211,9 @@ class ProfileRepository @Inject constructor(
         referral_reward_issued = referral_reward_issued,
         created_at = created_at,
         updated_at = updated_at,
-        deleted_at = deleted_at
+        deleted_at = deleted_at,
+        suspended_at = suspended_at,
+        suspended_reason = suspended_reason
     )
 
     private fun PlanEntity.toDto() = PlanDto(

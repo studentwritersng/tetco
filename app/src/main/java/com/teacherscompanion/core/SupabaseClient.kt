@@ -7,7 +7,6 @@ import io.github.jan.supabase.postgrest.Postgrest
 import io.github.jan.supabase.storage.Storage
 import io.github.jan.supabase.functions.Functions
 import io.github.jan.supabase.realtime.Realtime
-import io.ktor.client.engine.android.Android
 
 object SupabaseClientProvider {
     private const val SUPABASE_URL = "https://yovqrtevqxkcfxvifzxv.supabase.co"
@@ -20,7 +19,7 @@ object SupabaseClientProvider {
             install(Storage)
             install(Functions)
             install(Realtime)
-            httpEngine = Android
+            // engine auto-detected
         }
     }
 }

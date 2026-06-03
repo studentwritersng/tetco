@@ -88,7 +88,7 @@ fun UsageRow(label: String, used: Int, limit: Int?) {
     ) {
         Text(label, style = MaterialTheme.typography.bodySmall, modifier = Modifier.weight(1f))
         LinearProgressIndicator(
-            progress = { cappedProgress },
+            progress = cappedProgress,
             modifier = Modifier.width(80.dp).height(6.dp),
             color = color,
             trackColor = MaterialTheme.colorScheme.surfaceVariant,

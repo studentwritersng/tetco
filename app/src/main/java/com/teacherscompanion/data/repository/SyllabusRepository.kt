@@ -16,12 +16,19 @@ import com.teacherscompanion.data.remote.dto.LessonNoteDto
 import com.teacherscompanion.data.remote.dto.QuestionDto
 import com.teacherscompanion.data.remote.dto.SyllabusTopicDto
 import io.github.jan.supabase.SupabaseClient
-import io.github.jan.supabase.functions.invoke
+import io.github.jan.supabase.gotrue.auth
+import io.github.jan.supabase.functions.functions
 import io.github.jan.supabase.postgrest.from
+import io.ktor.client.statement.bodyAsText
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.JsonObject
+import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.buildJsonObject
+import kotlinx.serialization.json.jsonArray
+import kotlinx.serialization.json.jsonObject
+import kotlinx.serialization.json.jsonPrimitive
 import kotlinx.serialization.json.put
 import java.time.Instant
 import java.util.UUID
@@ -216,33 +223,25 @@ class SyllabusRepository @Inject constructor(
         val teacherId = supabaseClient.auth.currentSessionOrNull()?.user?.id
             ?: throw Exception("Not authenticated")
 
-        val response = supabaseClient.functions.invoke("generate-lesson-note") {
-            setBody(mapOf(
-                "topic_id" to topicId,
-                "topic_title" to topicTitle,
-                "subject_name" to subjectName,
-                "class_name" to className,
-                "term" to (term ?: "First"),
-                "week_number" to (weekNumber ?: 1)
-            ))
-        }
-
-        fun extractContent(raw: Any?): String {
-            return when (raw) {
-                is String -> {
-                    val parsed = try { json.parseToJsonElement(raw) } catch (_: Exception) { null }
-                    val map = parsed as? kotlinx.serialization.json.JsonObject
-                    map?.get("content")?.let { kotlinx.serialization.json.Json.decodeFromJsonElement<String>(it) }
-                        ?: map?.get("error")?.let { throw Exception(it.toString().trim('"')) }
-                        ?: raw
-                }
-                is Map<*, *> -> {
-                    raw["content"] as? String
-                        ?: raw["error"] as? String?.let { throw Exception(it) }
-                        ?: throw Exception("No content in AI response")
-                }
-                else -> raw?.toString() ?: throw Exception("Empty AI response")
+        val httpResponse = supabaseClient.functions.invoke(
+            "generate-lesson-note",
+            body = buildJsonObject {
+                put("topic_id", topicId)
+                put("topic_title", topicTitle)
+                put("subject_name", subjectName)
+                put("class_name", className)
+                put("term", term ?: "First")
+                put("week_number", weekNumber ?: 1)
             }
+        )
+        val response = httpResponse.bodyAsText()
+
+        fun extractContent(raw: String): String {
+            val parsed = try { json.parseToJsonElement(raw) } catch (_: Exception) { return raw }
+            val map = parsed as? JsonObject
+            map?.get("content")?.let { return it.jsonPrimitive.content }
+            map?.get("error")?.let { throw Exception(it.toString().trim('"')) }
+            return raw
         }
 
         val content = extractContent(response)
@@ -298,35 +297,36 @@ class SyllabusRepository @Inject constructor(
 
         if (lessonNoteContents.isEmpty()) throw Exception("No lesson notes found in selected weeks. Generate lesson notes first.")
 
-        val response = supabaseClient.functions.invoke("generate-questions") {
-            setBody(mapOf(
-                "lesson_note_contents" to lessonNoteContents,
-                "type" to type,
-                "question_count" to questionCount,
-                "subject_name" to subjectName,
-                "class_name" to className,
-                "difficulty" to difficulty,
-                "week_start" to weekStart,
-                "week_end" to weekEnd
-            ))
-        }
+        val httpResponse = supabaseClient.functions.invoke(
+            "generate-questions",
+            body = buildJsonObject {
+                put("lesson_note_contents", JsonArray(lessonNoteContents.map { JsonPrimitive(it) }))
+                put("type", type)
+                put("question_count", questionCount)
+                put("subject_name", subjectName)
+                put("class_name", className)
+                put("difficulty", difficulty)
+                put("week_start", weekStart)
+                put("week_end", weekEnd)
+            }
+        )
+        val responseString = httpResponse.bodyAsText()
+        val responseJson = try { json.parseToJsonElement(responseString) as? JsonObject } catch (_: Exception) { null }
+        val responseMap = responseJson ?: throw Exception("Invalid response from AI")
+        val formattedText = responseMap["formatted_text"]?.jsonPrimitive?.content ?: ""
+        val questionsRaw = responseMap["questions"]?.jsonArray?.map { it.jsonObject } ?: emptyList()
 
-        val responseMap = response as? Map<*, *> ?: throw Exception("Invalid response from AI")
-        val formattedText = responseMap["formatted_text"] as? String ?: ""
-        val questionsRaw = responseMap["questions"] as? List<*> ?: emptyList<Any>()
-
-        val questions = questionsRaw.mapNotNull { it as? Map<*, *> }.map { q ->
-            val options = q["options"] as? Map<*, *>
+        val questions = questionsRaw.map { q ->
             QuestionDto(
                 id = UUID.randomUUID().toString(),
                 lesson_note_id = "",
                 teacher_id = teacherId,
-                type = q["type"] as? String ?: type,
-                question_text = q["question_text"] as? String ?: "",
-                options = options?.let { json.parseToJsonElement(json.encodeToString(it)) as? JsonObject },
-                correct_answer = q["correct_answer"] as? String,
-                answer_guide = q["answer_guide"] as? String,
-                marks = (q["marks"] as? Number)?.toInt(),
+                type = q["type"]?.jsonPrimitive?.content ?: type,
+                question_text = q["question_text"]?.jsonPrimitive?.content ?: "",
+                options = q["options"]?.jsonObject,
+                correct_answer = q["correct_answer"]?.jsonPrimitive?.content,
+                answer_guide = q["answer_guide"]?.jsonPrimitive?.content,
+                marks = (q["marks"] as? JsonPrimitive)?.content?.toIntOrNull(),
                 display_order = 0,
                 ai_generated = true,
                 created_at = Instant.now().toString(),
@@ -376,34 +376,26 @@ class SyllabusRepository @Inject constructor(
         val existing = lessonNoteDao.getForTopic(topicId)
             ?: throw Exception("Generate a lesson note first before creating a teaching guide")
 
-        val response = supabaseClient.functions.invoke("generate-teaching-guide") {
-            setBody(mapOf(
-                "lesson_note_id" to existing.id,
-                "topic_title" to topicTitle,
-                "subject_name" to subjectName,
-                "class_name" to className,
-                "term" to (term ?: "First"),
-                "week_number" to (weekNumber ?: 1),
-                "lesson_note_content" to (existing.content ?: "")
-            ))
-        }
-
-        fun extractGuide(raw: Any?): String {
-            return when (raw) {
-                is String -> {
-                    val parsed = try { json.parseToJsonElement(raw) } catch (_: Exception) { null }
-                    val map = parsed as? kotlinx.serialization.json.JsonObject
-                    map?.get("teaching_guide")?.let { kotlinx.serialization.json.Json.decodeFromJsonElement<String>(it) }
-                        ?: map?.get("error")?.let { throw Exception(it.toString().trim('"')) }
-                        ?: raw
-                }
-                is Map<*, *> -> {
-                    raw["teaching_guide"] as? String
-                        ?: raw["error"] as? String?.let { throw Exception(it) }
-                        ?: throw Exception("No teaching guide in AI response")
-                }
-                else -> raw?.toString() ?: throw Exception("Empty AI response")
+        val httpResponse = supabaseClient.functions.invoke(
+            "generate-teaching-guide",
+            body = buildJsonObject {
+                put("lesson_note_id", existing.id)
+                put("topic_title", topicTitle)
+                put("subject_name", subjectName)
+                put("class_name", className)
+                put("term", term ?: "First")
+                put("week_number", weekNumber ?: 1)
+                put("lesson_note_content", existing.content ?: "")
             }
+        )
+        val response = httpResponse.bodyAsText()
+
+        fun extractGuide(raw: String): String {
+            val parsed = try { json.parseToJsonElement(raw) } catch (_: Exception) { return raw }
+            val map = parsed as? JsonObject
+            map?.get("teaching_guide")?.let { return it.jsonPrimitive.content }
+            map?.get("error")?.let { throw Exception(it.toString().trim('"')) }
+            return raw
         }
 
         val guide = extractGuide(response)
